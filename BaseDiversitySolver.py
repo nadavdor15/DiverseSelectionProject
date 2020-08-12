@@ -3,11 +3,12 @@ from math import floor
 
 User = recordclass('User', 'id marg groups')
 Group = recordclass('Group', 'id wei cov users')
+Solution = recordclass('Solution', 'users groups')
 
 
 class BaseDiversitySolver(object):
     def __init__(self, users, groups):
-        self.solution = []
+        self.solution = Solution([], [])
         self.users = [User(user, None, []) for user in users]
         self.groups = [Group(i, None, None, []) for i in range(len(groups))]
         for user in self.users:
@@ -17,7 +18,7 @@ class BaseDiversitySolver(object):
                     user.groups.append(group)
 
     def solve(self, bucket_size, weight='LBS', cover='Single'):
-        if len(self.solution) > 0:
+        if len(self.solution.users) > 0:
             return self.solution
 
         for group in self.groups:
@@ -32,11 +33,12 @@ class BaseDiversitySolver(object):
             users_margs = [user.marg for user in self.users]
             max_user_idx = users_margs.index(max(users_margs))
             max_user = self.users[max_user_idx]
-            self.solution.append(max_user.id)
+            self.solution.users.append(max_user.id)
             self.users.remove(max_user)
             for group in self.groups:
                 if group.cov > 0 and max_user in group.users:
                     group.cov -= 1
+                    self.solution.groups.append(group.id)
                     if group.cov == 0:
                         for user in group.users:
                             user.marg -= group.wei
