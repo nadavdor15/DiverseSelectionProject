@@ -59,7 +59,7 @@ class BaseDiversitySolver(object):
         if type == 'Single':
             return 1
         elif type == 'Prop':
-            return max(floor(bucket_size*(len(group.users))/len(self.users)),1)
+            return max(floor(bucket_size * (len(group.users)) / len(self.users)), 1)
         else:
             raise Exception('Unsupported cover function')
 

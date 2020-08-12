@@ -17,9 +17,9 @@ def main():
 
     data_handler = DataHandler(businesses_filename, reviews_filename)
     users = data_handler.users
-    groups = users
+    groups = data_handler.groups
     solver = BaseDiversitySolver(users, groups)
-    print(solver.solve(bucket_size=2, weight='LBS', cover='Single'))
+    print(solver.solve(bucket_size=9, weight='LBS', cover='Single'))
 
 
 if __name__ == "__main__":

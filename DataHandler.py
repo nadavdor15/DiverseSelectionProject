@@ -13,46 +13,61 @@ class DataHandler(object):
         # self.hotels = hotels_data['id'].unique().tolist()
         # self.hotels = list(map(str, self.hotels))
 
-        self.reviews = pd.read_json(review_filename, lines=True)
-        self.reviews_authors = pd.read_json(self.reviews['author'].to_json(orient='records'))
-        self.users = self.reviews_authors["id"].unique().tolist()
-        self.users.remove('')
+        self.__reviews = pd.read_json(review_filename, lines=True)
+        self.reviews_authors = pd.read_json(self.__reviews['author'].to_json(orient='records'))
+        self.__users = self.reviews_authors["id"].unique().tolist()
+        self.__users.remove('')
+
+        range_names = [i + "_" + j for j in 'avg_service avg_cleanliness avg_overall' 
+                                            ' avg_value avg_location avg_rooms'.split(' ')
+                       for i in ["low", "medium", "high"]]
+        self.__user_groups = {x: [] for x in range_names}
 
         self.__user_profiles__ = []
-        for user_id in self.users:
-            user_reviews = self.__get_user_reviews__(user_id)
-            user_profile = UserProfile(user_id, '', '', '', '', '', '', '')
+        for user_id in self.__users:
+            user_reviews = self.__get_user_reviews(user_id)
             author = pd.read_json(user_reviews['author'].to_json(orient='records'))
-            if 'location' in author.index:
-                user_profile.lives_in = author['location']
             ratings = pd.read_json(user_reviews['ratings'].to_json(orient='records'))
-            if 'service' in ratings.index:
-                user_profile.avg_service = statistics.mean(ratings['service'].to_list())
-            if 'cleanliness' in ratings.index:
-                user_profile.avg_cleanliness = statistics.mean(ratings['cleanliness'].to_list())
-            if 'overall' in ratings.index:
-                user_profile.avg_overall = statistics.mean(ratings['overall'].to_list())
-            if 'value' in ratings.index:
-                user_profile.avg_value = statistics.mean(ratings['value'].to_list())
-            if 'location' in ratings.index:
-                user_profile.avg_location = statistics.mean(ratings['location'].to_list())
-            if 'rooms' in ratings.index:
-                user_profile.avg_rooms = statistics.mean(ratings['rooms'].to_list())
-            self.__user_profiles__.append(user_profile)
-            print(user_id)
+            self.__add_user_to_groups(user_id, author, ratings)
 
-        # all_groups = {}
-        # locations = list(set([location if len(location.split(",")) <= 1 else location.split(",")[1]
-        #                       for location in self.reviews_authors['location'].unique().tolist()]))
-        # locations.remove('')
-        # print(len(locations))
+    def __add_user_to_groups(self, user_id, author, ratings):
+        user_profile = UserProfile('', '', '', '', '', '', '', '')
+        if 'location' in author.columns:
+            user_profile.lives_in = author['location'].to_list()[0]
+            if len(user_profile.lives_in.split(",")) > 1:
+                user_profile.lives_in = user_profile.lives_in.split(",")[1]
+            if user_profile.lives_in not in self.__user_groups:
+                self.__user_groups[user_profile.lives_in] = []
+            self.__user_groups[user_profile.lives_in].append(user_id)
+        self.__add_user_to_property_group(user_id, user_profile, ratings, 'service')
+        self.__add_user_to_property_group(user_id, user_profile, ratings, 'cleanliness')
+        self.__add_user_to_property_group(user_id, user_profile, ratings, 'overall')
+        self.__add_user_to_property_group(user_id, user_profile, ratings, 'value')
+        self.__add_user_to_property_group(user_id, user_profile, ratings, 'location')
+        self.__add_user_to_property_group(user_id, user_profile, ratings, 'rooms')
 
-        exit()
+    def __add_user_to_property_group(self, user_id, user_profile, ratings, property):
+        if property in ratings.columns:
+            user_profile.avg_service = statistics.mean(ratings[property].to_list())
+            if user_profile.avg_service < 2:
+                self.__user_groups['low_avg_' + property].append(user_id)
+            elif user_profile.avg_service < 3.5:
+                self.__user_groups['medium_avg_' + property].append(user_id)
+            else:
+                self.__user_groups['high_avg_' + property].append(user_id)
 
-    def __get_user_reviews__(self, user_id):
+    def __get_user_reviews(self, user_id):
         indexes = []
         for index, row in self.reviews_authors.iterrows():
             if row['id'] == user_id:
                 indexes.append(index)
 
-        return self.reviews.loc[indexes]
+        return self.__reviews.loc[indexes]
+
+    @property
+    def groups(self):
+        return list(self.__user_groups.values())
+
+    @property
+    def users(self):
+        return self.__users
