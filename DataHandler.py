@@ -1,6 +1,5 @@
 import pandas as pd
 from recordclass import recordclass
-import json
 import statistics
 
 UserProfile = recordclass('UserProfile', 'id lives_in avg_service avg_cleanliness avg_overall '
@@ -39,12 +38,9 @@ class DataHandler(object):
             if user_profile.lives_in not in self.__user_groups:
                 self.__user_groups[user_profile.lives_in] = []
             self.__user_groups[user_profile.lives_in].append(user_id)
-        self.__add_user_to_property_group(user_id, user_profile, ratings, 'service')
-        self.__add_user_to_property_group(user_id, user_profile, ratings, 'cleanliness')
-        self.__add_user_to_property_group(user_id, user_profile, ratings, 'overall')
-        self.__add_user_to_property_group(user_id, user_profile, ratings, 'value')
-        self.__add_user_to_property_group(user_id, user_profile, ratings, 'location')
-        self.__add_user_to_property_group(user_id, user_profile, ratings, 'rooms')
+        ratings_names = [name[4:] for name in UserProfile.__dict__.keys() if name.startswith('avg_')]
+        for name in ratings_names:
+            self.__add_user_to_property_group(user_id, user_profile, ratings, name)
 
     def __add_user_to_property_group(self, user_id, user_profile, ratings, property):
         if property in ratings.columns:
