@@ -50,4 +50,3 @@ class MRBaseDiversitySolver(MRJob):
                 if self.max in group:
                     marg -= len(group)
                 yield (user, [marg, groups])
-
